@@ -10,6 +10,8 @@ extract_practice_rankings_links <- function(md_path) {
   idx <- 0L
 
   for (line in lines) {
+    line <- trimws(line)
+
     if (startsWith(line, "**PRACTICE RANKINGS ")) {
       current_year <- as.integer(str_extract(line, "\\d{4}"))
     }

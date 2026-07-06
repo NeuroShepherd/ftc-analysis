@@ -1,0 +1,12 @@
+name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
+check_links_active_step|function|05f9b93665d1a766
+extraction_step|function|c38a323c4120ad49
+extract_additional_links|function|11826bf570d316a8
+download_data_files|function|6677e3762db5cb29
+link_rows|stem|a350ffffb43775a1|f1aa4c13bb5d7091|ace3fa9db2dadbac|1447980237||t20640.8153724026s|s3541b|3541|rds|local|vector|||0.155||
+additional_link_rows|stem|9853e2baa424b721|a90ac687346ca9e8|b617518ca337487b|-1976670592||t20640.8153726855s|s418b|418|rds|local|vector|||0.001||
+all_links|stem|3a6bed0dc0d67700|81b332d3a1ee5876|64d5ea88ea8bb941|-498339870||t20640.8153729872s|s3744b|3744|rds|local|vector|||0||
+link_status|stem|a02a894f936012dc|42709d029e116808|c4d9e1bb207ab720|811946455||t20640.8160659293s|s4530b|4530|rds|local|vector|||59.857||
+download_result|stem|6ead8ca376e4f933|4f3ae3f8733c551f|2eadca46e1a3d9db|-601238911||t20640.8161968537s|s9755b|9755|rds|local|vector|||11.285||
+download_manifest_file|stem|fd147a54fdc610f3|d1c892ad20fd9cd5|ca8e9960ad02a9d4|-543042433|data/manifests/practice_rankings_download_manifest.csv|t20640.8160702669s|s36469b|36469|file|local|vector|||0||
+tab_inventory_file|stem|e2ac759764d6dd73|bfcc8bf153d86474|ca8e9960ad02a9d4|555863569|data/manifests/practice_rankings_tab_inventory.csv|t20640.8161968366s|s39321b|39321|file|local|vector|||0||

@@ -2,7 +2,10 @@ library(dplyr)
 library(stringr)
 library(tibble)
 
-extract_practice_rankings_links <- function(md_path) {
+
+extraction_step <- function(
+  md_path = "data/google-sheets/Practice Rankings.md"
+) {
   lines <- readLines(md_path, warn = FALSE)
 
   current_year <- NA_integer_
@@ -30,5 +33,18 @@ extract_practice_rankings_links <- function(md_path) {
   bind_rows(records[seq_len(idx)])
 }
 
-md_path <- "data/google-sheets/Practice Rankings.md"
-link_rows <- extract_practice_rankings_links(md_path)
+
+extract_additional_links <- function(
+  md_path = "data/google-sheets/additional-links.md"
+) {
+  lines <- readLines(md_path, warn = FALSE)
+  lines <- trimws(lines)
+  lines <- lines[nchar(lines) > 0 & grepl("^\\*\\s+", lines)]
+  lines <- sub("^\\*\\s+", "", lines)
+
+  tibble(
+    year = 2025L,
+    text = sub(":\\s+(https?://.*)$", "", lines),
+    href = sub("^[^:]+:\\s+(https?://.*)$", "\\1", lines)
+  )
+}

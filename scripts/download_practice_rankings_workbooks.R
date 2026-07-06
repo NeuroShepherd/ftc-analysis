@@ -64,13 +64,30 @@ make_export_url <- function(file_id) {
   )
 }
 
+extract_additional_links <- function(md_path) {
+  lines <- readLines(md_path, warn = FALSE)
+  lines <- trimws(lines)
+  lines <- lines[nchar(lines) > 0 & grepl("^\\*\\s+", lines)]
+  lines <- sub("^\\*\\s+", "", lines)
+
+  tibble(
+    year = 2025L,
+    text = sub(":\\s+(https?://.*)$", "", lines),
+    href = sub("^[^:]+:\\s+(https?://.*)$", "\\1", lines)
+  )
+}
+
 download_active_workbooks <- function(
   md_path = "data/google-sheets/Practice Rankings.md",
+  addl_path = "data/google-sheets/additional-links.md",
   status_path = "data/google-sheets/practice_rankings_link_status.csv",
   download_dir = "data/downloads",
   overwrite = FALSE
 ) {
-  links <- extract_practice_rankings_links(md_path)
+  links <- bind_rows(
+    extract_practice_rankings_links(md_path),
+    extract_additional_links(addl_path)
+  )
 
   status <- if (file.exists(status_path)) {
     read.csv(status_path, stringsAsFactors = FALSE) |>

@@ -3,6 +3,19 @@ library(dplyr)
 library(stringr)
 library(tibble)
 
+extract_additional_links <- function(md_path) {
+  lines <- readLines(md_path, warn = FALSE)
+  lines <- trimws(lines)
+  lines <- lines[nchar(lines) > 0 & grepl("^\\*\\s+", lines)]
+  lines <- sub("^\\*\\s+", "", lines)
+
+  tibble(
+    year = 2025L,
+    text = sub(":\\s+(https?://.*)$", "", lines),
+    href = sub("^[^:]+:\\s+(https?://.*)$", "\\1", lines)
+  )
+}
+
 extract_practice_rankings_links <- function(md_path) {
   lines <- readLines(md_path, warn = FALSE)
 
@@ -92,9 +105,13 @@ check_link_active <- function(url) {
 }
 
 md_path <- "data/google-sheets/Practice Rankings.md"
+addl_path <- "data/google-sheets/additional-links.md"
 out_path <- "data/google-sheets/practice_rankings_link_status.csv"
 
-links <- extract_practice_rankings_links(md_path)
+links <- bind_rows(
+  extract_practice_rankings_links(md_path),
+  extract_additional_links(addl_path)
+)
 
 link_status <- links |>
   rowwise() |>

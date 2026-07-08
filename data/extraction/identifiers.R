@@ -1,5 +1,6 @@
 library(readxl)
 library(purrr)
+library(tidyr)
 
 
 downloaded_data_files <- list.files("data/downloads", full.names = T) %>%
@@ -97,3 +98,19 @@ targeted_workbooks <- target_sheets %>%
         set_names(notebook_names)
     }
   )
+
+
+all_combined <- targeted_workbooks %>%
+  enframe(name = "sheet_name", value = "workbooks") %>%
+  mutate(
+    workbooks = map(workbooks, enframe, name = "workbook_name", value = "data")
+  ) %>%
+  unnest(workbooks) %>%
+  mutate(data = map(data, ~ mutate(.x, across(everything(), as.character)))) %>%
+  unnest(data)
+
+
+temp <- all_combined %>%
+  mutate(grade = as.character(as.numeric(grade))) %>%
+  distinct(grade, name, .keep_all = TRUE) %>%
+  arrange(name)

@@ -59,7 +59,8 @@ download_data_files <- function(
       str_to_lower() |>
       str_replace_all("[^a-z0-9]+", "_") |>
       str_replace_all("_+", "_") |>
-      str_replace_all("^_|_$", "")
+      str_replace_all("^_|_$", "") |>
+      str_replace_all("f_a_t", "fat")
   }
 
   make_export_url <- function(file_id) {
@@ -122,10 +123,9 @@ download_data_files <- function(
           )
         ),
         file_name = sprintf(
-          "%04d_%s_%s.xlsx",
+          "%04d_%s.xlsx",
           year,
-          safe_name(text),
-          google_file_id
+          safe_name(text)
         ),
         local_path = file.path(download_dir, file_name)
       )
@@ -236,6 +236,62 @@ download_data_files <- function(
     tabs
   }
 
+  rename_to_new_convention <- function(
+    download_dir = "data/downloads",
+    manifest_path = "data/manifests/practice_rankings_download_manifest.csv"
+  ) {
+    if (!file.exists(manifest_path)) {
+      return(invisible())
+    }
+
+    manifest <- read_csv(manifest_path, show_col_types = FALSE)
+
+    renamed <- 0L
+
+    for (i in seq_len(nrow(manifest))) {
+      row <- manifest[i, ]
+      year <- row$year[[1]]
+      text <- row$text[[1]]
+      file_id <- row$google_file_id[[1]]
+
+      new_name <- sprintf("%04d_%s.xlsx", year, safe_name(text))
+      new_path <- file.path(download_dir, new_name)
+
+      # Construct old filename pattern and find it on disk
+      old_name <- sprintf("%04d_%s_%s.xlsx", year, safe_name(text), file_id)
+      old_path <- file.path(download_dir, old_name)
+
+      if (!file.exists(old_path)) {
+        # Maybe already renamed, or old file has a different name
+        next
+      }
+
+      if (old_path == new_path) {
+        next
+      }
+
+      if (file.exists(new_path)) {
+        file.remove(old_path)
+      } else {
+        file.rename(old_path, new_path)
+      }
+
+      renamed <- renamed + 1L
+    }
+
+    if (renamed > 0) {
+      message(sprintf("Renamed %d file(s) to new naming convention.", renamed))
+    }
+
+    # Update manifest
+    manifest <- manifest |>
+      mutate(
+        file_name = sprintf("%04d_%s.xlsx", year, safe_name(text)),
+        local_path = file.path(download_dir, file_name)
+      )
+    write_csv(manifest, manifest_path)
+  }
+
   build_practice_rankings_downloads <- function(
     md_path = "data/google-sheets/Practice Rankings.md",
     status = NULL,
@@ -252,6 +308,11 @@ download_data_files <- function(
     ),
     overwrite = FALSE
   ) {
+    rename_to_new_convention(
+      download_dir = download_dir,
+      manifest_path = manifest_path
+    )
+
     downloads <- download_active_workbooks(
       md_path = md_path,
       status = status,

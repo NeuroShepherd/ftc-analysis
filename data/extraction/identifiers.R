@@ -100,8 +100,32 @@ targeted_workbooks <- target_sheets %>%
       ) %>%
         set_names(notebook_names)
     }
+  ) %>%
+  c(
+    list(
+      "10_meter" = downloaded_data_files %>%
+        grep("10_meter", ., value = TRUE) %>%
+        map(
+          ~ read_excel(.x) %>%
+            select(grade = 1, 2, 3) %>%
+            unite(name, 2, 3, sep = ", ")
+        ),
+      "30_yard" = downloaded_data_files %>%
+        grep("30_yard", ., value = TRUE) %>%
+        map(
+          ~ read_excel(.x) %>%
+            select(-matches("Best")) %>%
+            select(grade = 1, 2, 3) %>%
+            unite(name, 2, 3, sep = ", ")
+        )
+    )
   )
 
+# apparently no 10 meter fly data from 2016 through 2018 :(
+# the only 3 years with explicit 30 yard spreadsheets are 2016-2019
+
+# Probably do some additional cleaning or checks of the files here
+# for comments that were entered in the rows
 
 all_combined <- targeted_workbooks %>%
   enframe(name = "sheet_name", value = "workbooks") %>%
@@ -117,26 +141,3 @@ temp <- all_combined %>%
   mutate(grade = as.character(as.numeric(grade))) %>%
   distinct(grade, name, .keep_all = TRUE) %>%
   arrange(name)
-
-
-# apparently no 10 meter fly data from 2016 through 2018 :(
-
-downloaded_data_files %>%
-  grep("10_meter", ., value = TRUE) %>%
-  map(
-    ~ read_excel(.x) %>%
-      select(grade = 1, 2, 3) %>%
-      unite(name, 2, 3, sep = ", ")
-  )
-
-
-# the only 3 years with explicit 30 year spreadsheets are 2016-2019
-# which makes sense given previous comment
-downloaded_data_files %>%
-  grep("30_yard", ., value = TRUE) %>%
-  map(
-    ~ read_excel(.x) %>%
-      select(-matches("Best")) %>%
-      select(grade = 1, 2, 3) %>%
-      unite(name, 2, 3, sep = ", ")
-  )

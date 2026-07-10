@@ -4,3 +4,7 @@
 .Ruserdata
 
 .posit/assistant/
+
+**_files/**
+/.quarto/
+**/*.quarto_ipynb

@@ -223,7 +223,16 @@ all_combined <- all_combined |>
 
 
 temp <- all_combined %>%
-  mutate(grade = as.character(as.numeric(grade))) %>%
-  mutate(year = str_sub(workbook_name, 1, 4)) %>%
+  mutate(grade = (as.numeric(grade))) %>%
+  mutate(year = as.numeric(str_sub(workbook_name, 1, 4))) %>%
   distinct(year, grade, name, .keep_all = TRUE) %>%
-  arrange(name, as.numeric(grade), year)
+  arrange(name, year, as.numeric(grade)) %>%
+  group_by(name) %>%
+  mutate(
+    grade_change = grade - dplyr::lag(grade),
+    year_change = year - dplyr::lag(year),
+    year_grade_changes_match = dplyr::near(grade_change, year_change)
+  ) %>%
+  dplyr::filter(
+    any(!year_grade_changes_match)
+  )

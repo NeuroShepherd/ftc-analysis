@@ -1,4 +1,5 @@
 library(readxl)
+use("magrittr", "%<>%")
 library(purrr)
 library(tidyr)
 library(dplyr)
@@ -49,9 +50,9 @@ get_workbooks_with_relevant_sheets <- function(target_sheet) {
 }
 
 target_sheets <- c(
-  "Sprint Roster",
-  "BOUNDS",
-  "Vertical Jump",
+  # "Sprint Roster",
+  # "BOUNDS",
+  # "Vertical Jump",
   "40s and 10m flys",
   "Official Roster",
   "Roster"
@@ -61,6 +62,19 @@ select_with_before <- function(data, pattern) {
   # quite a few workbooks with sheets I want but inconsistent column location
   col_pos <- which(str_detect(names(data), pattern))
   data |> select(all_of(c(col_pos - 1, col_pos)))
+}
+
+
+removable_rows <- c(
+  "#DIV/0!",
+  "AVERAGE OF TOP TEN",
+  "AVERAGE OF TOP 20",
+  "AVERAGE, NA",
+  "Average, NA"
+)
+remove_misc_rows <- function(data, column, removable_rows) {
+  data %>%
+    dplyr::filter(!{{ column }} %in% removable_rows)
 }
 
 read_sheet_core <- function(path, sheet_name) {
@@ -92,11 +106,15 @@ targeted_workbooks <- target_sheets %>%
     ~ {
       sheet_name <- .x
       notebook_names <- names(get_workbooks_with_relevant_sheets(.x))
-      print(notebook_names)
 
       map(
         notebook_names,
-        ~ read_sheet_core(paste0("data/downloads/", .x, ".xlsx"), sheet_name)
+        ~ read_sheet_core(
+          paste0("data/downloads/", .x, ".xlsx"),
+          sheet_name
+        ) %>%
+          remove_misc_rows(name, removable_rows) %>%
+          dplyr::filter(!is.na(grade) | !is.na(name))
       ) %>%
         set_names(notebook_names)
     }
@@ -108,7 +126,8 @@ targeted_workbooks <- target_sheets %>%
         map(
           ~ read_excel(.x) %>%
             select(grade = 1, 2, 3) %>%
-            unite(name, 2, 3, sep = ", ")
+            unite(name, 2, 3, sep = ", ") %>%
+            remove_misc_rows(name, removable_rows)
         ),
       "30_yard" = downloaded_data_files %>%
         grep("30_yard", ., value = TRUE) %>%
@@ -116,7 +135,8 @@ targeted_workbooks <- target_sheets %>%
           ~ read_excel(.x) %>%
             select(-matches("Best")) %>%
             select(grade = 1, 2, 3) %>%
-            unite(name, 2, 3, sep = ", ")
+            unite(name, 2, 3, sep = ", ") %>%
+            remove_misc_rows(name, removable_rows)
         )
     )
   )
@@ -126,6 +146,42 @@ targeted_workbooks <- target_sheets %>%
 
 # Probably do some additional cleaning or checks of the files here
 # for comments that were entered in the rows
+
+# # remove notes and info from previous year
+# targeted_workbooks$`40s and 10m flys`$`2024_speed_cycle_several_tabs` %<>%
+#   dplyr::filter(row_number() <= 47)
+
+# targeted_workbooks$`40s and 10m flys`$`2023_speed_cycle_several_tabs` %<>%
+#   dplyr::filter(row_number() <= 42)
+
+# # i don't know what strangeness happened here, but this person is listed
+# # as a freshman in 2020 and then again in 2022. they do not appear in any
+# # track results online or in the 2020 spreadsheet either
+# targeted_workbooks$`Sprint Roster`$`2020_speed_cycle_several_tabs` %<>%
+#   dplyr::filter(name != "Clark Amiel")
+
+# # this actually appears to have happened many times. I think a roster was
+# # simply copied and pasted from a later year into the 2020 roster without
+# # editing the years. There are tons of errors originating there so I'm
+# # just going to drop the 2020 Sprint Roster and BOUNDS as they seem to be
+# # the sources of error and have no associated empirical data
+
+# targeted_workbooks$`Sprint Roster`$`2020_speed_cycle_several_tabs` <- NULL
+# targeted_workbooks$BOUNDS$`2020_speed_cycle_several_tabs` <- NULL
+
+# # same thing for the 2023 spreadsheet where I've confirmed the BOUNDS
+# # sheet has incorrect grades
+# targeted_workbooks$BOUNDS$`2023_speed_cycle_several_tabs` <- NULL
+
+# # all of the 2021 BOUNDS, Vertical Jump and Sprint Roster sheets
+# # also appear to have incorrect years
+# targeted_workbooks$`Sprint Roster`$`2021_speed_cycle_several_tabs` <- NULL
+# targeted_workbooks$BOUNDS$`2021_speed_cycle_several_tabs` <- NULL
+# targeted_workbooks$`Vertical Jump`$`2021_speed_cycle_several_tabs` <- NULL
+
+targeted_workbooks$`40s and 10m flys`$`2019_speed_cycle_two_tabs` %<>%
+  dplyr::filter(name != "Damhoff, Dr. Brian")
+
 
 all_combined <- targeted_workbooks %>%
   enframe(name = "sheet_name", value = "workbooks") %>%
@@ -139,5 +195,11 @@ all_combined <- targeted_workbooks %>%
 
 temp <- all_combined %>%
   mutate(grade = as.character(as.numeric(grade))) %>%
-  distinct(grade, name, .keep_all = TRUE) %>%
-  arrange(name)
+  mutate(year = str_sub(workbook_name, 1, 4)) %>%
+  distinct(year, grade, name, .keep_all = TRUE) %>%
+  arrange(name, as.numeric(grade), year)
+
+
+affected_2020_spreadsheet <- temp %>%
+  group_by(name) %>%
+  dplyr::filter(any(workbook_name == "2020_speed_cycle_several_tabs"))

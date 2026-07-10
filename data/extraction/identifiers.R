@@ -53,7 +53,7 @@ target_sheets <- c(
   # "Sprint Roster",
   # "BOUNDS",
   # "Vertical Jump",
-  "40s and 10m flys",
+  "40s and 10m flys"
   # "Official Roster",
   # "Roster"
 )
@@ -127,16 +127,20 @@ targeted_workbooks <- target_sheets %>%
           ~ read_excel(.x) %>%
             select(grade = 1, 2, 3) %>%
             unite(name, 2, 3, sep = ", ") %>%
-            remove_misc_rows(name, removable_rows)
+            remove_misc_rows(name, removable_rows) %>%
+            dplyr::filter(name != "NA, NA")
         ),
       "30_yard" = downloaded_data_files %>%
         grep("30_yard", ., value = TRUE) %>%
         map(
-          ~ read_excel(.x) %>%
-            select(-matches("Best")) %>%
-            select(grade = 1, 2, 3) %>%
-            unite(name, 2, 3, sep = ", ") %>%
-            remove_misc_rows(name, removable_rows)
+          ~ {
+            read_excel(.x) %>%
+              select(-matches("Best")) %>%
+              select(grade = 1, 2, 3) %>%
+              unite(name, 2, 3, sep = ", ") %>%
+              remove_misc_rows(name, removable_rows) %>%
+              dplyr::filter(name != "NA, NA")
+          }
         )
     )
   )
@@ -147,12 +151,24 @@ targeted_workbooks <- target_sheets %>%
 # Probably do some additional cleaning or checks of the files here
 # for comments that were entered in the rows
 
-# # remove notes and info from previous year
-# targeted_workbooks$`40s and 10m flys`$`2024_speed_cycle_several_tabs` %<>%
-#   dplyr::filter(row_number() <= 47)
+# remove notes and info from previous year
+targeted_workbooks$`40s and 10m flys`$`2025_speed_cycle_2024_2025` %<>%
+  dplyr::filter(row_number() <= 30)
 
-# targeted_workbooks$`40s and 10m flys`$`2023_speed_cycle_several_tabs` %<>%
-#   dplyr::filter(row_number() <= 42)
+targeted_workbooks$`40s and 10m flys`$`2024_speed_cycle_several_tabs` %<>%
+  dplyr::filter(row_number() <= 47)
+
+targeted_workbooks$`40s and 10m flys`$`2023_speed_cycle_several_tabs` %<>%
+  dplyr::filter(row_number() <= 42)
+
+targeted_workbooks$`40s and 10m flys`$`2022_speed_cycle_several_tabs` %<>%
+  dplyr::filter(row_number() <= 52)
+
+# no problems with the 40s and 10m flys sheet from 2021
+
+targeted_workbooks$`40s and 10m flys`$`2020_speed_cycle_several_tabs` %<>%
+  dplyr::filter(row_number() <= 37)
+
 
 # # i don't know what strangeness happened here, but this person is listed
 # # as a freshman in 2020 and then again in 2022. they do not appear in any
@@ -193,13 +209,21 @@ all_combined <- targeted_workbooks %>%
   unnest(data)
 
 
+source("data/extraction/name-corrections.R")
+
+incorrect <- unlist(name_corrections_list, use.names = FALSE)
+correct <- rep(
+  names(name_corrections_list),
+  times = lengths(name_corrections_list)
+)
+correction_map <- set_names(correct, incorrect)
+
+all_combined <- all_combined |>
+  mutate(name = recode(name, !!!correction_map))
+
+
 temp <- all_combined %>%
   mutate(grade = as.character(as.numeric(grade))) %>%
   mutate(year = str_sub(workbook_name, 1, 4)) %>%
   distinct(year, grade, name, .keep_all = TRUE) %>%
   arrange(name, as.numeric(grade), year)
-
-
-affected_2020_spreadsheet <- temp %>%
-  group_by(name) %>%
-  dplyr::filter(any(workbook_name == "2020_speed_cycle_several_tabs"))

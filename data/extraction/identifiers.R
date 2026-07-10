@@ -54,8 +54,8 @@ target_sheets <- c(
   # "BOUNDS",
   # "Vertical Jump",
   "40s and 10m flys",
-  "Official Roster",
-  "Roster"
+  # "Official Roster",
+  # "Roster"
 )
 
 select_with_before <- function(data, pattern) {

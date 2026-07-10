@@ -219,20 +219,9 @@ correct <- rep(
 correction_map <- set_names(correct, incorrect)
 
 all_combined <- all_combined |>
-  mutate(name = recode(name, !!!correction_map))
-
-
-temp <- all_combined %>%
+  mutate(name = recode(name, !!!correction_map)) %>%
   mutate(grade = (as.numeric(grade))) %>%
   mutate(year = as.numeric(str_sub(workbook_name, 1, 4))) %>%
-  distinct(year, grade, name, .keep_all = TRUE) %>%
-  arrange(name, year, as.numeric(grade)) %>%
-  group_by(name) %>%
-  mutate(
-    grade_change = grade - dplyr::lag(grade),
-    year_change = year - dplyr::lag(year),
-    year_grade_changes_match = dplyr::near(grade_change, year_change)
-  ) %>%
-  dplyr::filter(
-    any(!year_grade_changes_match)
-  )
+  arrange(name, year, as.numeric(grade))
+
+# View(all_combined)

@@ -190,3 +190,5 @@ data_10m_flys$long_combined <- data_10m_flys$long %>%
 
 
 data_10m_flys$long_combined
+
+saveRDS(data_10m_flys, "data/extraction/data_10m_flys.Rds")

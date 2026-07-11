@@ -225,3 +225,13 @@ all_combined <- all_combined |>
   arrange(name, year, as.numeric(grade))
 
 # View(all_combined)
+
+# add a UUID for anonymization to all sprinters
+unique_names <- unique(all_combined$name)
+name_to_uuid <- set_names(
+  uuid::UUIDgenerate(n = length(unique_names)),
+  unique_names
+)
+
+all_combined %<>%
+  mutate(uuid = unname(name_to_uuid[name]))

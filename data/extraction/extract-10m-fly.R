@@ -53,7 +53,7 @@ remove_trailing_numbers <- function(data) {
 long_data <- function(data) {
     pivot_longer(
         data,
-        cols = -c(name, year),
+        cols = -c(name, year, uuid),
         names_to = "date",
         values_to = "dash_time"
     )
@@ -175,11 +175,32 @@ data_10m_flys$wide$`2015_fat_10_meter_fly` <- data_10m_flys$original$`2015_fat_1
 # Instead, read in the names and the columns with 10m fly data only. Then,
 # run the name cleaner and can join to the year-over-year ID table I have.
 
+# run name corrections and UUID anonymization on names, and then sort by UUID
+uuids <- select(all_combined, name, uuid) %>%
+    distinct()
+
+data_10m_flys$wide %<>%
+    map(
+        ~ {
+            mutate(.x, name = recode(name, !!!correction_map)) %>%
+                left_join(uuids, by = c("name" = "name")) %>%
+                relocate(uuid, .after = name)
+        }
+    )
+
+
+# confirmed that no one is missing a UUID after joining the all_combined table
+# data_10m_flys$wide %>%
+#     map(
+#         ~ {
+#             sum(is.na(.x[["uuid"]]))
+#         }
+#     )
+
 data_10m_flys$long <- data_10m_flys$wide %>%
     map(
         ~ {
             long_data(.x) %>%
-                mutate(name = recode(name, !!!correction_map)) %>%
                 rename(season_year = year)
         }
     )
@@ -189,6 +210,26 @@ data_10m_flys$long_combined <- data_10m_flys$long %>%
     bind_rows()
 
 
-data_10m_flys$long_combined
+# data_10m_flys$long_combined
 
+# create a local copy for myself with original data if needed
 saveRDS(data_10m_flys, "data/extraction/data_10m_flys.Rds")
+
+# create an anonymized-only version which means dropping the original
+# data files
+data_10m_flys_anonymized <- data_10m_flys
+data_10m_flys_anonymized$original <- NULL
+
+data_10m_flys_anonymized$wide %<>%
+    map(~ select(.x, -name))
+
+data_10m_flys_anonymized$long %<>%
+    map(~ select(.x, -name))
+
+data_10m_flys_anonymized$long_combined %<>%
+    select(-name)
+
+saveRDS(
+    data_10m_flys_anonymized,
+    "data/extraction/data_10m_flys_anonymized.Rds"
+)

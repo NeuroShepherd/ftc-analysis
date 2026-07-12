@@ -176,7 +176,7 @@ data_10m_flys$wide$`2015_fat_10_meter_fly` <- data_10m_flys$original$`2015_fat_1
 # run the name cleaner and can join to the year-over-year ID table I have.
 
 # run name corrections and UUID anonymization on names, and then sort by UUID
-uuids <- select(all_combined, name, uuid) %>%
+uuids <- select(all_combined, name, uuid, participation_year) %>%
     distinct()
 
 data_10m_flys$wide %<>%

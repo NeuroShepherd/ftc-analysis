@@ -235,3 +235,11 @@ name_to_uuid <- set_names(
 
 all_combined %<>%
   mutate(uuid = unname(name_to_uuid[name]))
+
+
+# NEED TO UPDATE SO THAT GRADE **PLUS** A PARTICIPATION YEAR VARIABLE IS AVAILABLE
+
+all_combined %<>%
+  arrange(name, grade) %>%
+  group_by(name) %>%
+  mutate(participation_year = row_number())
